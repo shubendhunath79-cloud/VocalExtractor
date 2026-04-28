@@ -1,0 +1,7 @@
+flask
+flask-cors
+gunicorn
+demucs
+torch
+torchaudio
+ffmpeg-python
