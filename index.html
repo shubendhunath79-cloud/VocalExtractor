@@ -3,183 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Virat Kohli International Career</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Virat Kohli Complete Career</title>
     <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-            color: white;
+        body{
+            margin:0;
+            padding:20px;
+            font-family:Arial,sans-serif;
+            background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+            color:white;
         }
 
-        h1 {
-            text-align: center;
-            margin-bottom: 10px;
+        h1{
+            text-align:center;
+            margin-bottom:10px;
         }
 
-        p {
-            text-align: center;
-            color: #ddd;
+        p{
+            text-align:center;
+            color:#ddd;
         }
 
-        #loading {
-            text-align: center;
-            font-size: 22px;
-            margin-top: 50px;
+        .api-section{
+            max-width:700px;
+            margin:30px auto;
+            text-align:center;
         }
 
-        .search-box {
-            text-align: center;
-            margin: 25px 0;
+        input{
+            width:100%;
+            padding:15px;
+            font-size:16px;
+            border:none;
+            border-radius:10px;
+            margin-bottom:15px;
         }
 
-        input, select {
-            padding: 12px;
-            margin: 5px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
+        button{
+            padding:15px 35px;
+            font-size:18px;
+            border:none;
+            border-radius:10px;
+            background:#00c6ff;
+            color:white;
+            cursor:pointer;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: rgba(255,255,255,0.08);
-            backdrop-filter: blur(10px);
+        button:hover{
+            opacity:.9;
         }
 
-        th, td {
-            padding: 14px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+        #status{
+            text-align:center;
+            margin:20px 0;
+            font-size:20px;
         }
 
-        th {
-            background: rgba(0,0,0,0.4);
-            position: sticky;
-            top: 0;
+        table{
+            width:100%;
+            border-collapse:collapse;
+            margin-top:20px;
+            background:rgba(255,255,255,0.08);
+            backdrop-filter:blur(10px);
         }
 
-        tr:hover {
-            background: rgba(255,255,255,0.12);
+        th,td{
+            padding:12px;
+            text-align:center;
+            border-bottom:1px solid rgba(255,255,255,0.1);
         }
 
-        .century {
-            color: gold;
-            font-weight: bold;
+        th{
+            background:rgba(0,0,0,0.4);
+            position:sticky;
+            top:0;
+        }
+
+        tr:hover{
+            background:rgba(255,255,255,0.12);
+        }
+
+        .century{
+            color:gold;
+            font-weight:bold;
         }
     </style>
 </head>
 <body>
 
-    <h1>🏏 Virat Kohli Complete International Career</h1>
-    <p>Every International Innings of Virat Kohli</p>
+<h1>🏏 Virat Kohli International Career</h1>
+<p>Complete Match-by-Match Batting Record</p>
 
-    <div class="search-box">
-        <input type="text" id="search" placeholder="Search opponent...">
-        <select id="formatFilter">
-            <option value="">All Formats</option>
-            <option value="ODI">ODI</option>
-            <option value="T20I">T20I</option>
-            <option value="Test">Test</option>
-        </select>
-    </div>
+<div class="api-section">
+    <input type="text" id="apiKey" placeholder="Enter your Sportmonks API Token">
+    <button onclick="loadCareer()">Load Career</button>
+</div>
 
-    <div id="loading">Loading career data...</div>
+<div id="status"></div>
 
-    <table id="careerTable" style="display:none;">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Date</th>
-                <th>Format</th>
-                <th>Opponent</th>
-                <th>Runs</th>
-                <th>Balls</th>
-                <th>Strike Rate</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-    </table>
+<table id="careerTable" style="display:none;">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Format</th>
+            <th>Opponent</th>
+            <th>Runs</th>
+            <th>Balls</th>
+            <th>Strike Rate</th>
+        </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+</table>
 
 <script>
-const PLAYER_ID = 253802; // Virat Kohli (Cricbuzz/CricAPI commonly uses this)
-let allMatches = [];
+const VIRAT_PLAYER_ID = 637; // Verify in your Sportmonks account
 
-// Demo fallback data.
-// Replace fetch URL with your preferred cricket API endpoint.
 async function loadCareer() {
+    const token = document.getElementById('apiKey').value.trim();
+    const status = document.getElementById('status');
+
+    if (!token) {
+        alert('Please enter your Sportmonks API token.');
+        return;
+    }
+
+    status.textContent = 'Loading Virat Kohli career data...';
+
     try {
-        // Example structure; replace with a real API.
-        // const response = await fetch(`YOUR_API_ENDPOINT/${PLAYER_ID}`);
-        // const data = await response.json();
+        const response = await fetch(
+            `https://cricket.sportmonks.com/api/v2.0/players/${VIRAT_PLAYER_ID}?api_token=${token}&include=career,teams`
+        );
 
-        // Sample placeholder data
-        allMatches = [
-            {date:"18 Aug 2008", format:"ODI", opponent:"Sri Lanka", runs:12, balls:22},
-            {date:"24 Dec 2009", format:"ODI", opponent:"Sri Lanka", runs:107, balls:111},
-            {date:"12 Jun 2010", format:"T20I", opponent:"Zimbabwe", runs:26, balls:21},
-            {date:"20 Jun 2011", format:"Test", opponent:"West Indies", runs:4, balls:15}
-        ];
+        const data = await response.json();
 
-        renderTable(allMatches);
+        if (!data.data) {
+            throw new Error('Invalid API response.');
+        }
 
-        document.getElementById("loading").style.display = "none";
-        document.getElementById("careerTable").style.display = "table";
+        /*
+          NOTE:
+          Full innings-by-innings data requires fixture and scorecard endpoints.
+          This sample demonstrates the connection.
+        */
+
+        status.textContent =
+            'Connected successfully! Next step: fetch scorecards for every international match.';
+
+        document.getElementById('careerTable').style.display = 'table';
+
     } catch (error) {
-        document.getElementById("loading").innerText =
-            "Failed to load data. Please check your API key.";
+        status.textContent = 'Error: ' + error.message;
     }
 }
-
-function renderTable(matches) {
-    const tbody = document.getElementById("tableBody");
-    tbody.innerHTML = "";
-
-    matches.forEach((match, index) => {
-        const sr = match.balls > 0
-            ? ((match.runs / match.balls) * 100).toFixed(2)
-            : "-";
-
-        tbody.innerHTML += `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${match.date}</td>
-                <td>${match.format}</td>
-                <td>${match.opponent}</td>
-                <td class="${match.runs >= 100 ? 'century' : ''}">
-                    ${match.runs}
-                </td>
-                <td>${match.balls}</td>
-                <td>${sr}</td>
-            </tr>
-        `;
-    });
-}
-
-function filterMatches() {
-    const search = document.getElementById("search").value.toLowerCase();
-    const format = document.getElementById("formatFilter").value;
-
-    const filtered = allMatches.filter(match => {
-        const matchesOpponent =
-            match.opponent.toLowerCase().includes(search);
-
-        const matchesFormat =
-            !format || match.format === format;
-
-        return matchesOpponent && matchesFormat;
-    });
-
-    renderTable(filtered);
-}
-
-document.getElementById("search").addEventListener("input", filterMatches);
-document.getElementById("formatFilter").addEventListener("change", filterMatches);
-
-loadCareer();
 </script>
 
 </body>
