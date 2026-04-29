@@ -1,48 +1,53 @@
-from flask import Flask, request, send_file, jsonify
+from flask import Flask, request, send_file
 from flask_cors import CORS
-import subprocess
 import os
-import uuid
+import subprocess
 
 app = Flask(__name__)
 CORS(app)
 
 UPLOAD_FOLDER = "uploads"
-OUTPUT_FOLDER = "separated"
+OUTPUT_FOLDER = "outputs"
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
+@app.route("/")
+def home():
+    return "Vocal Extractor API is running"
+
 @app.route("/extract", methods=["POST"])
-def extract_vocals():
+def extract():
     if "audio" not in request.files:
-        return jsonify({"error": "No audio file uploaded"}), 400
+        return "No file uploaded", 400
 
     file = request.files["audio"]
-    unique_id = str(uuid.uuid4())
-    input_path = os.path.join(UPLOAD_FOLDER, f"{unique_id}_{file.filename}")
-
+    input_path = os.path.join(UPLOAD_FOLDER, file.filename)
     file.save(input_path)
 
+    output_path = os.path.join(OUTPUT_FOLDER, "vocals.wav")
+
+    # Demucs command (runs separation)
     try:
         subprocess.run([
-            "demucs",
-            "--two-stems=vocals",
+            "python", "-m", "demucs",
+            "-o", OUTPUT_FOLDER,
             input_path
         ], check=True)
 
-        filename = os.path.splitext(os.path.basename(input_path))[0]
+        # Find output vocals (Demucs output structure)
+        base_name = os.path.splitext(file.filename)[0]
         vocal_path = os.path.join(
-            "separated",
+            OUTPUT_FOLDER,
             "htdemucs",
-            filename,
+            base_name,
             "vocals.wav"
         )
 
         return send_file(vocal_path, as_attachment=True)
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return str(e), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)
