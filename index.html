@@ -1,81 +1,231 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Cricket T20 Game</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gully Legends: Tape Ball Chronicles</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e3a8a, #14532d);
+        }
+
+        canvas {
+            display: block;
+            margin: auto;
+            border-radius: 20px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            max-width: 100%;
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-blue-900 via-black to-green-900 min-h-screen flex justify-center items-center text-white">
+<body class="flex items-center justify-center min-h-screen text-white">
 
-    <div class="bg-white/10 backdrop-blur-lg p-8 rounded-3xl shadow-2xl text-center max-w-md w-full">
-        <h1 class="text-5xl font-bold mb-4">🏏 Cricket T20</h1>
-        <p class="mb-6 text-gray-300">Choose your shot and score big!</p>
+<canvas id="gameCanvas" width="1200" height="700"></canvas>
 
-        <div class="text-2xl mb-2">Score: <span id="score">0</span>/<span id="wickets">0</span></div>
-        <div class="text-xl mb-6">Overs: <span id="overs">0.0</span></div>
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 
-        <div id="result" class="text-3xl font-bold mb-6 text-yellow-400">Match Started!</div>
+let score = 0;
+let wickets = 0;
+let balls = 0;
+let swagger = 0;
+let gameOver = false;
+let message = "PRESS SPACE TO PLAY YOUR SHOT";
 
-        <div class="grid grid-cols-3 gap-4">
-            <button onclick="playShot(1)" class="bg-blue-600 p-4 rounded-xl hover:bg-blue-700">1 Run</button>
-            <button onclick="playShot(4)" class="bg-green-600 p-4 rounded-xl hover:bg-green-700">Four</button>
-            <button onclick="playShot(6)" class="bg-red-600 p-4 rounded-xl hover:bg-red-700">Six</button>
-        </div>
+const batsman = {
+    x: 950,
+    y: 420,
+    swing: 0
+};
 
-        <button onclick="restartGame()" class="mt-6 bg-purple-600 px-6 py-3 rounded-xl hover:bg-purple-700">
-            New Match
-        </button>
-    </div>
+let ball = resetBall();
 
-    <script>
-        let score = 0;
-        let wickets = 0;
-        let balls = 0;
-        let gameOver = false;
+function resetBall() {
+    return {
+        x: 50,
+        y: 430 + Math.random() * 80 - 40,
+        radius: 14,
+        speed: 13,
+        active: true,
+        trail: []
+    };
+}
 
-        function updateDisplay(message = "Choose your shot!") {
-            document.getElementById("score").innerText = score;
-            document.getElementById("wickets").innerText = wickets;
-            document.getElementById("overs").innerText =
-                Math.floor(balls / 6) + "." + (balls % 6);
-            document.getElementById("result").innerText = message;
+document.addEventListener("keydown", e => {
+    if (e.code === "Space" && !gameOver) {
+        batsman.swing = 12;
+        playShot();
+    }
+
+    if (e.code === "KeyR") restartGame();
+});
+
+function playShot() {
+    if (!ball.active) return;
+
+    if (ball.x > 860 && ball.x < 1010) {
+        const outcomes = [1,2,3,4,6];
+        const runs = outcomes[Math.floor(Math.random() * outcomes.length)];
+
+        score += runs;
+        swagger = Math.min(100, swagger + runs * 4);
+
+        if (runs === 6) {
+            message = "MONSTER SIX! 🔥";
+        } else if (runs === 4) {
+            message = "CRUNCHING FOUR!";
+        } else {
+            message = runs + " RUNS!";
         }
 
-        function playShot(runs) {
-            if (gameOver) return;
+        nextBall();
+    }
+}
 
-            const outcome = Math.random();
+function nextBall() {
+    ball.active = false;
+    balls++;
 
-            balls++;
-
-            if (outcome < 0.2) {
-                wickets++;
-                updateDisplay("OUT! ❌");
-
-                if (wickets >= 10) {
-                    gameOver = true;
-                    updateDisplay("All Out! Final Score: " + score);
-                }
-            } else {
-                score += runs;
-                updateDisplay(runs + " Runs! 🎉");
-            }
-
-            if (balls >= 120) {
-                gameOver = true;
-                updateDisplay("Innings Over! Final Score: " + score);
-            }
+    setTimeout(() => {
+        if (wickets >= 10 || balls >= 120) {
+            gameOver = true;
+            message = "INNINGS OVER! PRESS R";
+            return;
         }
 
-        function restartGame() {
-            score = 0;
-            wickets = 0;
-            balls = 0;
-            gameOver = false;
-            updateDisplay("New Match Started!");
-        }
+        ball = resetBall();
+    }, 1200);
+}
 
-        updateDisplay();
-    </script>
+function updateBall() {
+    if (!ball.active || gameOver) return;
+
+    ball.trail.push({x: ball.x, y: ball.y});
+    if (ball.trail.length > 10) ball.trail.shift();
+
+    ball.x += ball.speed;
+
+    if (ball.x > 1080) {
+        wickets++;
+        swagger = Math.max(0, swagger - 20);
+        message = "BOWLED! ❌";
+        nextBall();
+    }
+}
+
+function drawBackground() {
+    const grad = ctx.createLinearGradient(0,0,0,700);
+    grad.addColorStop(0,"#60a5fa");
+    grad.addColorStop(1,"#15803d");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle = "#78716c";
+    ctx.fillRect(0,500,canvas.width,200);
+
+    ctx.fillStyle = "#d97706";
+    ctx.fillRect(350,250,500,320);
+}
+
+function drawPitch() {
+    ctx.fillStyle = "#d4a373";
+    ctx.fillRect(150,380,900,120);
+}
+
+function drawBall() {
+    for (let i = 0; i < ball.trail.length; i++) {
+        const t = ball.trail[i];
+        ctx.globalAlpha = i / ball.trail.length;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, ball.radius, 0, Math.PI * 2);
+        ctx.fillStyle = "#ef4444";
+        ctx.fill();
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+    ctx.fillStyle = "#dc2626";
+    ctx.fill();
+}
+
+function drawBatsman() {
+    ctx.fillStyle = "#fbbf24";
+    ctx.fillRect(920,280,60,150);
+
+    ctx.save();
+    ctx.translate(960,420);
+
+    if (batsman.swing > 0) {
+        ctx.rotate(-0.9);
+        batsman.swing--;
+    }
+
+    ctx.fillStyle = "#92400e";
+    ctx.fillRect(0,-10,20,180);
+    ctx.restore();
+}
+
+function drawHUD() {
+    ctx.fillStyle = "white";
+    ctx.font = "bold 34px Arial";
+    ctx.fillText(`Score: ${score}/${wickets}`, 40, 60);
+    ctx.fillText(`Overs: ${Math.floor(balls/6)}.${balls%6}`, 40, 110);
+
+    ctx.fillStyle = "#111827";
+    ctx.fillRect(40,140,300,30);
+
+    ctx.fillStyle = "#f59e0b";
+    ctx.fillRect(40,140,swagger * 3,30);
+
+    ctx.strokeStyle = "white";
+    ctx.strokeRect(40,140,300,30);
+
+    ctx.fillStyle = "white";
+    ctx.font = "24px Arial";
+    ctx.fillText("SWAGGER", 140, 165);
+
+    ctx.font = "bold 36px Arial";
+    ctx.fillStyle = "#fef08a";
+    ctx.fillText(message, 350, 60);
+
+    if (gameOver) {
+        ctx.font = "bold 70px Arial";
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText("GAME OVER", 360, 350);
+    }
+}
+
+function gameLoop() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    drawBackground();
+    drawPitch();
+    updateBall();
+    drawBall();
+    drawBatsman();
+    drawHUD();
+
+    requestAnimationFrame(gameLoop);
+}
+
+function restartGame() {
+    score = 0;
+    wickets = 0;
+    balls = 0;
+    swagger = 0;
+    gameOver = false;
+    message = "PRESS SPACE TO PLAY YOUR SHOT";
+    ball = resetBall();
+}
+
+gameLoop();
+</script>
 
 </body>
 </html>
