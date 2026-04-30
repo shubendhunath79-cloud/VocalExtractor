@@ -3,229 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gully Legends: Tape Ball Chronicles</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Gully Legends: Batting Prototype</title>
     <style>
         body {
-            margin: 0;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #0f172a, #1e3a8a, #14532d);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #222;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 50px;
         }
-
-        canvas {
-            display: block;
-            margin: auto;
-            border-radius: 20px;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            max-width: 100%;
+        #game-board {
+            width: 800px;
+            height: 300px;
+            background: linear-gradient(to bottom, #87CEEB 60%, #8B4513 40%);
+            position: relative;
+            border: 4px solid #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        }
+        #pitch {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 120px;
+            background-color: #e3c498;
+            border-top: 2px solid #a67c52;
+        }
+        #sweet-spot {
+            position: absolute;
+            right: 120px;
+            bottom: 20px;
+            width: 80px;
+            height: 100px;
+            background-color: rgba(50, 205, 50, 0.3);
+            border: 3px dashed #32cd32;
+        }
+        #batter {
+            position: absolute;
+            right: 50px;
+            bottom: 40px;
+            width: 30px;
+            height: 100px;
+            background-color: #ff4500;
+            border-radius: 5px;
+        }
+        #ball {
+            position: absolute;
+            left: -30px;
+            bottom: 50px;
+            width: 25px;
+            height: 25px;
+            background-color: #ffeb3b; /* Tape ball yellow */
+            border-radius: 50%;
+            box-shadow: inset -5px -5px 10px rgba(0,0,0,0.5);
+            display: none;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            width: 800px;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        #feedback {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffeb3b;
+            height: 40px;
+            margin-top: 20px;
+            text-shadow: 2px 2px 4px #000;
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen text-white">
+<body>
 
-<canvas id="gameCanvas" width="1200" height="700"></canvas>
+    <div class="stats">
+        <div>Score: <span id="score">0</span></div>
+        <div>Swagger: <span id="swagger">0</span>%</div>
+    </div>
 
-<script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+    <div id="game-board">
+        <div id="pitch"></div>
+        <div id="sweet-spot"></div>
+        <div id="batter"></div>
+        <div id="ball"></div>
+    </div>
 
-let score = 0;
-let wickets = 0;
-let balls = 0;
-let swagger = 0;
-let gameOver = false;
-let message = "PRESS SPACE TO PLAY YOUR SHOT";
+    <div id="feedback">Press SPACEBAR to start the bowler!</div>
 
-const batsman = {
-    x: 950,
-    y: 420,
-    swing: 0
-};
+    <script>
+        const ball = document.getElementById('ball');
+        const feedback = document.getElementById('feedback');
+        const scoreDisplay = document.getElementById('score');
+        const swaggerDisplay = document.getElementById('swagger');
+        
+        let isPitched = false;
+        let ballX = -30;
+        let speed = 0;
+        let score = 0;
+        let swagger = 0;
+        let animationId;
 
-let ball = resetBall();
+        // The exact pixel coordinates of the green "Sweet Spot" box
+        const sweetSpotStart = 800 - 120 - 80; // Game Width - Right Pos - Box Width
+        const sweetSpotEnd = 800 - 120;
 
-function resetBall() {
-    return {
-        x: 50,
-        y: 430 + Math.random() * 80 - 40,
-        radius: 14,
-        speed: 13,
-        active: true,
-        trail: []
-    };
-}
-
-document.addEventListener("keydown", e => {
-    if (e.code === "Space" && !gameOver) {
-        batsman.swing = 12;
-        playShot();
-    }
-
-    if (e.code === "KeyR") restartGame();
-});
-
-function playShot() {
-    if (!ball.active) return;
-
-    if (ball.x > 860 && ball.x < 1010) {
-        const outcomes = [1,2,3,4,6];
-        const runs = outcomes[Math.floor(Math.random() * outcomes.length)];
-
-        score += runs;
-        swagger = Math.min(100, swagger + runs * 4);
-
-        if (runs === 6) {
-            message = "MONSTER SIX! 🔥";
-        } else if (runs === 4) {
-            message = "CRUNCHING FOUR!";
-        } else {
-            message = runs + " RUNS!";
+        function pitchBall() {
+            if (isPitched) return;
+            isPitched = true;
+            ballX = -30;
+            ball.style.display = 'block';
+            speed = Math.random() * 8 + 10; // Randomize bowling speed between 10 and 18
+            feedback.innerText = "Here it comes...";
+            feedback.style.color = "white";
+            
+            animateBall();
         }
 
-        nextBall();
-    }
-}
+        function animateBall() {
+            ballX += speed;
+            ball.style.left = ballX + 'px';
 
-function nextBall() {
-    ball.active = false;
-    balls++;
-
-    setTimeout(() => {
-        if (wickets >= 10 || balls >= 120) {
-            gameOver = true;
-            message = "INNINGS OVER! PRESS R";
-            return;
+            if (ballX > 800) {
+                // Ball passed the batter without a swing
+                feedback.innerText = "Clean Bowled! You missed.";
+                feedback.style.color = "red";
+                swagger = 0; // Lose swagger
+                swaggerDisplay.innerText = swagger;
+                resetPitch();
+            } else {
+                animationId = requestAnimationFrame(animateBall);
+            }
         }
 
-        ball = resetBall();
-    }, 1200);
-}
+        function swingBat() {
+            if (!isPitched) {
+                pitchBall();
+                return;
+            }
 
-function updateBall() {
-    if (!ball.active || gameOver) return;
+            cancelAnimationFrame(animationId);
+            
+            // Check timing
+            if (ballX >= sweetSpotStart && ballX <= sweetSpotEnd) {
+                // Perfect hit
+                let power = Math.floor(Math.random() * 2); 
+                let runs = power === 1 ? 6 : 4;
+                score += runs;
+                swagger = Math.min(100, swagger + 20);
+                
+                feedback.innerText = runs === 6 ? "BOOM! Massive SIX!" : "Beautiful Cover Drive for 4!";
+                feedback.style.color = "#32cd32";
+            } else if (ballX > sweetSpotEnd) {
+                // Swung too late
+                feedback.innerText = "Too Late! Caught behind.";
+                feedback.style.color = "red";
+                swagger = 0;
+            } else {
+                // Swung too early
+                feedback.innerText = "Too Early! Leading edge.";
+                feedback.style.color = "red";
+                swagger = 0;
+            }
 
-    ball.trail.push({x: ball.x, y: ball.y});
-    if (ball.trail.length > 10) ball.trail.shift();
+            scoreDisplay.innerText = score;
+            swaggerDisplay.innerText = swagger;
+            resetPitch();
+        }
 
-    ball.x += ball.speed;
+        function resetPitch() {
+            isPitched = false;
+            ball.style.display = 'none';
+            setTimeout(() => {
+                if(!isPitched) {
+                    feedback.innerText = "Press SPACEBAR for the next ball!";
+                    feedback.style.color = "white";
+                }
+            }, 1500);
+        }
 
-    if (ball.x > 1080) {
-        wickets++;
-        swagger = Math.max(0, swagger - 20);
-        message = "BOWLED! ❌";
-        nextBall();
-    }
-}
-
-function drawBackground() {
-    const grad = ctx.createLinearGradient(0,0,0,700);
-    grad.addColorStop(0,"#60a5fa");
-    grad.addColorStop(1,"#15803d");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-
-    ctx.fillStyle = "#78716c";
-    ctx.fillRect(0,500,canvas.width,200);
-
-    ctx.fillStyle = "#d97706";
-    ctx.fillRect(350,250,500,320);
-}
-
-function drawPitch() {
-    ctx.fillStyle = "#d4a373";
-    ctx.fillRect(150,380,900,120);
-}
-
-function drawBall() {
-    for (let i = 0; i < ball.trail.length; i++) {
-        const t = ball.trail[i];
-        ctx.globalAlpha = i / ball.trail.length;
-        ctx.beginPath();
-        ctx.arc(t.x, t.y, ball.radius, 0, Math.PI * 2);
-        ctx.fillStyle = "#ef4444";
-        ctx.fill();
-    }
-
-    ctx.globalAlpha = 1;
-    ctx.beginPath();
-    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-    ctx.fillStyle = "#dc2626";
-    ctx.fill();
-}
-
-function drawBatsman() {
-    ctx.fillStyle = "#fbbf24";
-    ctx.fillRect(920,280,60,150);
-
-    ctx.save();
-    ctx.translate(960,420);
-
-    if (batsman.swing > 0) {
-        ctx.rotate(-0.9);
-        batsman.swing--;
-    }
-
-    ctx.fillStyle = "#92400e";
-    ctx.fillRect(0,-10,20,180);
-    ctx.restore();
-}
-
-function drawHUD() {
-    ctx.fillStyle = "white";
-    ctx.font = "bold 34px Arial";
-    ctx.fillText(`Score: ${score}/${wickets}`, 40, 60);
-    ctx.fillText(`Overs: ${Math.floor(balls/6)}.${balls%6}`, 40, 110);
-
-    ctx.fillStyle = "#111827";
-    ctx.fillRect(40,140,300,30);
-
-    ctx.fillStyle = "#f59e0b";
-    ctx.fillRect(40,140,swagger * 3,30);
-
-    ctx.strokeStyle = "white";
-    ctx.strokeRect(40,140,300,30);
-
-    ctx.fillStyle = "white";
-    ctx.font = "24px Arial";
-    ctx.fillText("SWAGGER", 140, 165);
-
-    ctx.font = "bold 36px Arial";
-    ctx.fillStyle = "#fef08a";
-    ctx.fillText(message, 350, 60);
-
-    if (gameOver) {
-        ctx.font = "bold 70px Arial";
-        ctx.fillStyle = "#ffffff";
-        ctx.fillText("GAME OVER", 360, 350);
-    }
-}
-
-function gameLoop() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    drawBackground();
-    drawPitch();
-    updateBall();
-    drawBall();
-    drawBatsman();
-    drawHUD();
-
-    requestAnimationFrame(gameLoop);
-}
-
-function restartGame() {
-    score = 0;
-    wickets = 0;
-    balls = 0;
-    swagger = 0;
-    gameOver = false;
-    message = "PRESS SPACE TO PLAY YOUR SHOT";
-    ball = resetBall();
-}
-
-gameLoop();
-</script>
-
+        // Listen for Spacebar
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault(); // Stop page scrolling
+                swingBat();
+            }
+        });
+    </script>
 </body>
 </html>
